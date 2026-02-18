@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 import { html } from 'hono/html'
+import { serveStatic } from 'hono/bun'
 
 const app = new Hono()
 
@@ -14,9 +15,12 @@ const Layout = (content) => html`
       <meta name="viewport" content="width=device-width, initial-scale=1">
       <title>Pico + Turbo</title>
       <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2/css/pico.min.css">
+      <!--
       <script type="module"> 
         import hotwiredturbo from 'https://cdn.jsdelivr.net/npm/@hotwired/turbo@8.0.23/+esm'
       </script>
+      -->
+      <script type="module" src="/static/app.js"></script>
     </head>
     <body>
       <main class="container">
@@ -25,6 +29,8 @@ const Layout = (content) => html`
     </body>
   </html>
 `
+// Serve files in the /public folder at the /static path
+app.use('/static/*', serveStatic({ root: './public' }))
 
 // --- ROUTES ---
 
@@ -68,7 +74,13 @@ app.get('/', (c) => {
     </figure>
 
     <footer>
-      <form action="/tasks" method="POST" class="grid">
+      <form 
+        action="/tasks" 
+        method="POST" 
+        data-controller="reset-form"
+        data-action="turbo:submit-end->reset-form#clear"
+        class="grid">
+
         <input type="text" name="title" placeholder="New task title..." required>
         <button type="submit">Add Task</button>
       </form>
