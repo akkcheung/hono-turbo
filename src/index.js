@@ -170,7 +170,12 @@ app.use('/sse/*', async (c, next) => {
 app.get('/sse/clock-stream', (c) => {
   return stream(c, async (stream) => {
     while (true) {
-      const now = new Date().toLocaleTimeString()
+      // const now = new Date().toLocaleTimeString()
+      const now = new Date().toLocaleString("en-US", {
+        timeZone: "America/New_York", // EST
+        dateStyle: "short", 
+        timeStyle: "medium"
+      })
 
       const data = `
         <turbo-stream action="replace" target="current-time">
@@ -181,7 +186,6 @@ app.get('/sse/clock-stream', (c) => {
       `.replace(/\n/g, '') // Remove newlines for clean SSE data
 
       await stream.write('event: message\n')
-      // await stream.write(`data: signals ${data}\n\n`) 
       await stream.write(`data: ${data}\n\n`) 
       await stream.sleep(1000); // Wait 1 second
     }
