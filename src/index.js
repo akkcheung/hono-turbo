@@ -2,6 +2,8 @@ import { Hono } from 'hono'
 import { html } from 'hono/html'
 import { serveStatic } from 'hono/bun'
 
+import { stream } from 'hono/streaming'
+
 const app = new Hono()
 
 let tasks = [{ id:1, title:"Learn Hotwire Turbo"}]
@@ -48,6 +50,14 @@ app.get('/', (c) => {
   `)
 
   return c.html(Layout(html`
+    <article>
+      <header>Live Server Clock</header>
+      <turbo-stream-source src="/sse/clock-stream"></turbo-stream-source>
+      <h2>
+        Current Time: <span id="current-time">Loading...</span>
+      </h2>
+    </article>
+
     <hgroup> 
       <h1>Task Manager</h1>
       <p>Built with Bun, Hono and Pico CSS stack</p>
@@ -149,6 +159,34 @@ app.post('tasks', async (c) => {
   return c.body(turboStreamResponse)
 });
 
+app.use('/sse/*', async (c, next) => {
+  c.header('Content-Type', 'text/event-stream');
+  c.header('Cache-Control', 'no-cache');
+  c.header('Connection', 'keep-alive');
+  c.header('X-Accel-Buffering', 'no')
+  await next();
+});
+
+app.get('/sse/clock-stream', (c) => {
+  return stream(c, async (stream) => {
+    while (true) {
+      const now = new Date().toLocaleTimeString()
+
+      const data = `
+        <turbo-stream action="replace" target="current-time">
+          <template>
+            <span id="current-time">${now}</span>
+          </template>
+        </turbo-stream>
+      `.replace(/\n/g, '') // Remove newlines for clean SSE data
+
+      await stream.write('event: message\n')
+      // await stream.write(`data: signals ${data}\n\n`) 
+      await stream.write(`data: ${data}\n\n`) 
+      await stream.sleep(1000); // Wait 1 second
+    }
+  })
+})
 
 // export default app
 
